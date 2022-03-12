@@ -51,6 +51,22 @@ namespace whoami_vector {
 
             }
         }
+        void pop_back() {
+            if (_begin != nullptr && _end != nullptr) {
+                if (_begin == _end) {
+                    auto tmp = _begin;
+                    _begin = _end = nullptr;
+                    delete tmp;
+                    _size = 0;
+                }
+                else {
+                    auto tmp = _end;
+                    _end = _end->_left;
+                    delete tmp;
+                    _size--;
+                }
+            }
+        }
         size_t size() const {
             return _size;
         }
@@ -65,8 +81,9 @@ namespace whoami_vector {
             }
         }
         T& at(size_t index) const {
-            return this->operator[index];
+            return this->operator[](index);
         }
+
     };
 }
 
@@ -77,7 +94,16 @@ int main()
         vector.push_back(10);
         vector.push_back(20);
         vector.push_back(30);
-        std::cout << vector[100] << std::endl;
+        for (size_t i = 0; i < vector.size(); ++i) {
+            std::cout << vector[i] << " ";
+        }
+        std::cout << std::endl;
+        vector.pop_back();
+        vector.pop_back();
+        vector.pop_back();
+        for (size_t i = 0; i < vector.size(); ++i) {
+            std::cout << vector[i] << " ";
+        }
     }
     catch (std::exception e) {
         std::cout << e.what() << std::endl;
