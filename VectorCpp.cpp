@@ -1,5 +1,4 @@
-﻿// VectorCpp.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
-//
+﻿
 #include <iostream>
 
 namespace whoami_vector {
@@ -8,18 +7,66 @@ namespace whoami_vector {
         T _data;
         node* _left;
         node* _right;
+        static size_t _elements;
+        size_t tmp;
         node<T>(T data, node* l = nullptr, node* r = nullptr) {
             _data = data;
             _left = l;
             _right = r;
+            _elements++;
+            tmp = 0;
         }
     };
-    
-       
-   /* template <>
-    constexpr double default_value<double> = std::numeric_limits<double>::lowest();
-    */
+    template<class T>
+    size_t node<T>::_elements = 0;
 
+    template<class T>
+    class ReverseIterator {
+    private:
+        node<T>* _ptr;
+    public:
+        explicit ReverseIterator() : _ptr(nullptr) {
+
+        }
+        explicit ReverseIterator(node<T>* ptr) : _ptr(ptr) {
+
+        }
+        ReverseIterator& operator++() {
+            if (_ptr->_left != nullptr) _ptr = _ptr->_left;
+            return *this;
+        }
+        ReverseIterator& operator++(int) {
+            if (_ptr->_left != nullptr) {
+                ReverseIterator<T> tmp(*this);
+                ++*this;
+                return tmp;
+            }
+        }
+        ReverseIterator& operator+(size_t num) {
+
+            for (int i = 0; i < num; ++i) {
+                if (_ptr->_left != nullptr) {
+                    _ptr = _ptr->_left;
+                }
+                else break;
+            }
+         //   this->_ptr->tmp = num;
+            return *this;
+        }
+        ReverseIterator& operator-(int num) {
+            for (int i = 0; i < num; ++i) {
+                if (_ptr->_right != nullptr) {
+                    _ptr = _ptr->_right;
+                }
+                else break;
+            }
+            //this->_ptr->tmp = this->_ptr->_elements - num;
+            return *this;
+        }
+        node<T>* operator*() {
+            return _ptr;
+        }
+    };
 
     template<class T>
     class Iterator {
@@ -49,13 +96,15 @@ namespace whoami_vector {
                 return tmp;
             }
         }
-        Iterator& operator+(int num) {
-            for (int i = 0; i < num; ++i) {
-                if (_ptr->_right != nullptr) {
-                    _ptr = _ptr->_right;
+        Iterator& operator+(size_t num) {
+    
+                for (int i = 0; i < num; ++i) {
+                    if (_ptr->_right != nullptr) {
+                        _ptr = _ptr->_right;
+                    }
+                    else break;
                 }
-                else break;
-            }
+                this->_ptr->tmp = num;
             return *this;
         }
         Iterator& operator-(int num) {
@@ -65,6 +114,7 @@ namespace whoami_vector {
                 }
                 else break;
             }
+            this->_ptr->tmp = this->_ptr->_elements - num;
             return *this;
         }
          node<T>* operator*() {
@@ -79,6 +129,20 @@ namespace whoami_vector {
         node<T>* _begin;
         node<T>* _end;
         size_t _size;
+        void resetBegin() {
+            if (_begin != nullptr) {
+                while (_begin->_left != nullptr) {
+                    _begin = _begin->_left;
+                }
+            }
+        }
+        void resetEnd() {
+            if (_end != nullptr) {
+                while (_end->_right != nullptr) {
+                    _end = _end->_right;
+                }
+            }
+        }
     public:
         explicit Vector() {
             _begin = nullptr;
@@ -143,46 +207,89 @@ namespace whoami_vector {
             return this->operator[](index);
         }
         // need rework
+        /*
         void insert(Iterator<T> iterator, const T& val) {
             node<T>* pointer = *iterator;
-            if (pointer == _begin && pointer != _end) {
-                node<T>* new_node = new node<T>(val, nullptr, _begin);
-                _begin = new_node;
+            if((pointer->tmp+1)==(pointer->_elements)){
+                node<T>* new_node = new node<T>(val, pointer->_left, pointer);
+                (pointer->_left)->_right = new_node;
+                pointer->_left = new_node;
                 _size++;
                 return;
             }
-            if (pointer != _begin && pointer == _end) {
-                node<T>* new_node = new node<T>(val, _end, nullptr);
-                _end->_right = new_node;
-                _end = new_node;
-                _size++;
-                return;
-            }
-            if (pointer == _begin && pointer == _end) {
-                node<T>* new_node = new node<T>(val, nullptr, _begin);
-                _begin->_right = _end;
-                _begin = new_node;
-                _size++;
-                return;
-            }
-            if (pointer != _begin && pointer != _end) {
-                auto tmp = _begin;
-                while (tmp != pointer) {
-                    if(tmp->_right)
-                    tmp = tmp->_right;
+            else {
+                if (pointer == _begin && pointer != _end) {
+                    node<T>* new_node = new node<T>(val, nullptr, _begin);
+                    _begin = new_node;
+                    _size++;
+                    return;
                 }
-                 node<T>* new_node = new node<T>(val, tmp->_left, tmp);
+                if (pointer != _begin && pointer == _end) {
+                    node<T>* new_node = new node<T>(val, _end, nullptr);
+                    _end->_right = new_node;
+                    _end = new_node;
+                    _size++;
+                    return;
+                }
+                if (pointer == _begin && pointer == _end) {
+                    node<T>* new_node = new node<T>(val, nullptr, _begin);
+                    _begin->_right = _end;
+                    _begin = new_node;
+                    _size++;
+                    return;
+                }
+                if (pointer != _begin && pointer != _end) {
+                    auto tmp = _begin;
+                    while (tmp != pointer) {
+                        if (tmp->_right)
+                            tmp = tmp->_right;
+                    }
+                    node<T>* new_node = new node<T>(val, tmp->_left, tmp);
                     (tmp->_left)->_right = new_node;
                     tmp->_left = new_node;
+                    _size++;
+                    return;
+                }
+            }
+        }
+        void insert2(Iterator<T> iterator, const T& val) {
+            node<T>* pointer = *iterator;
+            if (pointer == _end) {
+                node<T>* new_node = new node<T>(val, _end, nullptr);
+                _end->_right = new_node;
+                resetBegin();
+                resetEnd();
                 _size++;
                 return;
             }
+            else if (pointer == _begin) {
+                node<T>* new_node = new node<T>(val, nullptr, _begin);
+                _begin->_left = new_node;
+                resetBegin();
+                resetEnd();
+                _size++;
+                return;
+            }
+            else {
+                node<T>* new_node = new node<T>(val, pointer, pointer->_right);
+                pointer->_right = new_node;
+                _size++;
+                return;
+            }
+           
         }
+        */
        Iterator<T> begin() const {
             return Iterator<T>(_begin);
         }
        Iterator<T> end() const {
            return Iterator<T>(_end);
+       }
+       ReverseIterator<T> rbegin() {
+           return ReverseIterator<T>(_end);
+       }
+       ReverseIterator<T> rend() {
+           return ReverseIterator<T>(_begin->_left);
        }
     };
 }
